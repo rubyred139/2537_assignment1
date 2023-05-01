@@ -74,7 +74,7 @@ app.get("/members", (req,res) => {
     var username = req.session.username;
 
     if (req.session.authenticated) {
-        const randomIndex = Math.floor(Math.random() * 3) + 1;
+        const randomIndex = Math.ceil(Math.random() * 3);
 
 
         if (randomIndex == 1) {
