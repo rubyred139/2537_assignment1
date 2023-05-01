@@ -134,26 +134,26 @@ app.get('/nosql-injection', async (req,res) => {
     res.send(`<h1>Hello ${username}</h1>`);
 });
 
-app.get('/about', (req,res) => {
-    var color = req.query.color;
+// app.get('/about', (req,res) => {
+//     var color = req.query.color;
 
-    res.send("<h1 style='color:"+color+";'>Patrick Guichon</h1>");
-});
+//     res.send("<h1 style='color:"+color+";'>Patrick Guichon</h1>");
+// });
 
-app.get('/contact', (req,res) => {
-    var missingEmail = req.query.missing;
-    var html = `
-        email address:
-        <form action='/submitEmail' method='post'>
-            <input name='email' type='text' placeholder='email'>
-            <button>Submit</button>
-        </form>
-    `;
-    if (missingEmail) {
-        html += "<br> email is required";
-    }
-    res.send(html);
-});
+// app.get('/contact', (req,res) => {
+//     var missingEmail = req.query.missing;
+//     var html = `
+//         email address:
+//         <form action='/submitEmail' method='post'>
+//             <input name='email' type='text' placeholder='email'>
+//             <button>Submit</button>
+//         </form>
+//     `;
+//     if (missingEmail) {
+//         html += "<br> email is required";
+//     }
+//     res.send(html);
+// });
 
 app.post('/submitEmail', (req,res) => {
     var email = req.body.email;
@@ -180,6 +180,8 @@ app.get('/createUser', (req,res) => {
 
 
 app.get('/login', (req,res) => {
+    var invalidPassword = req.query.msg;
+
     var html = `
     log in
     <form action='/loggingin' method='post'>
@@ -188,7 +190,12 @@ app.get('/login', (req,res) => {
     <button>Submit</button>
     </form>
     `;
+
+    if (invalidPassword) {
+        html += "<br> Invalid email/password combination" ;
+    }
     res.send(html);
+
 });
 
 app.post('/submitUser', async (req,res) => {
@@ -233,6 +240,7 @@ app.post('/loggingin', async (req,res) => {
 
 	console.log(result);
 	if (result.length != 1) {
+        res.send("Invalid email/password combination");
 		console.log("user not found");
 		res.redirect("/login");
 		return;
@@ -247,12 +255,14 @@ app.post('/loggingin', async (req,res) => {
 		return;
 	}
 	else {
-        res.send("Invalid email/password combination")
+        const errorMessage = "Invalid email/password combination";
 		console.log("incorrect password");
-		// res.redirect("/login");
+		res.redirect("/login?msg=" + errorMessage);
+        
 		return;
 	}
 });
+
 
 // app.get('/loggedin', (req,res) => {
 //     if (!req.session.authenticated) {
