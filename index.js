@@ -74,16 +74,16 @@ app.get("/members", (req,res) => {
     var username = req.session.username;
 
     if (req.session.authenticated) {
-        const randomIndex = Math.ceil(Math.random() * 3);
+        const randomIndex = Math.floor(Math.random() * 3);
 
 
-        if (randomIndex == 1) {
+        if (randomIndex == 0) {
             randomImage = ("<img src='/glasses.gif' style='width:250px;'>");
         }
-        else if (randomIndex == 2) {
+        else if (randomIndex == 1) {
             randomImage = ("<img src='/socks.gif' style='width:250px;'>");
         } 
-        else if (randomIndex == 3) {
+        else if (randomIndex == 2) {
             randomImage = ("<img src='/kitty-cat-sandwich.gif' style='width:250px;'>");
         }
         else {
