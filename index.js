@@ -49,7 +49,18 @@ app.use(session({
 ));
 
 app.get('/', (req,res) => {
-    res.send("<h1>Hello World!</h1>");
+    if (req.session.authenticated) {
+        res.send(`<h1>Welcom to Ruby's 2537 Assignment 1!</h1>
+            <a href="/members">Members</a>
+            <a href="/signout"Sign out</a>
+            `)
+    } else {
+        res.send(`<h1>Welcome to Ruby's 2537 Assignment 1!</h1>
+            <a href="/createUser>Sign up</a>
+            <a href="/signout>Sign out</a>
+        `);
+    }
+
 });
 
 app.get('/nosql-injection', async (req,res) => {
@@ -211,7 +222,7 @@ app.get('/loggedin', (req,res) => {
     res.send(html);
 });
 
-app.get('/logout', (req,res) => {
+app.get('/signout', (req,res) => {
 	req.session.destroy();
     var html = `
     You are logged out.
