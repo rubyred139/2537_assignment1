@@ -247,8 +247,9 @@ app.post('/loggingin', async (req,res) => {
 		return;
 	}
 	else {
+        res.send("Invalid email/password combination")
 		console.log("incorrect password");
-		res.redirect("/login");
+		// res.redirect("/login");
 		return;
 	}
 });
