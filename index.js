@@ -81,7 +81,7 @@ app.get("/members", (req,res) => {
             randomImage = ("<img src='/socks.gif' style='width:250px;'>");
         }
         else if (randomIndex == 1) {
-            randomImage = ("<img src='/glasses.gif' style='width:250px;'>");
+            randomImage = ("<img src='/fluffy.jpg' style='width:250px;'>");
         } 
         else if (randomIndex == 2) {
             randomImage = ("<img src='/kitty-cat-sandwich.gif' style='width:250px;'>");
