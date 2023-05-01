@@ -15,7 +15,7 @@ const app = express();
 const Joi = require("joi");
 
 
-const expireTime = 24 * 60 * 60 * 1000; //expires after 1 day  (hours * minutes * seconds * millis)
+const expireTime = 60 * 60 * 1000; //expires after 1 day  (hours * minutes * seconds * millis)
 
 /* secret information section */
 const mongodb_host = process.env.MONGODB_HOST;
@@ -50,18 +50,59 @@ app.use(session({
 
 app.get('/', (req,res) => {
     if (req.session.authenticated) {
-        res.send(`<h1>Welcom to Ruby's 2537 Assignment 1!</h1>
-            <a href="/members">Members</a>
-            <a href="/signout"Sign out</a>
-            `)
+        var html = `
+            <h1>Welcom to Ruby's 2537 Assignment 1!</h1>
+            <div><a href="/members">Members Area</a></div>
+            <div><a href="/signout">Sign out</a></div>
+        `;
+        res.send(html);
+        return;
     } else {
-        res.send(`<h1>Welcome to Ruby's 2537 Assignment 1!</h1>
-            <a href="/createUser>Sign up</a>
-            <a href="/signout>Sign out</a>
-        `);
+        var html = `
+            <h1>Welcome to Ruby's 2537 Assignment 1!</h1>
+            <div><a href="/createUser">Sign up</a></div>
+            <div><a href="/login">Log in</a></div>
+        `;
+        res.send(html)
+        return;
     }
+    // res.send(`<h1>Welcome to Ruby's 2537 Assignment 1!</h1>`)
 
 });
+
+app.get("/members", (req,res) => {
+    var username = req.session.username;
+
+    if (req.session.authenticated) {
+        const randomIndex = Math.floor(Math.random() * 3) + 1;
+
+
+        if (randomIndex == 1) {
+            randomImage = ("<img src='/fluffy.gif' style='width:250px;'>");
+        }
+        else if (randomIndex == 2) {
+            randomImage = ("<img src='/socks.gif' style='width:250px;'>");
+        } 
+        else if (randomIndex == 3) {
+            randomImage = ("<img src='/kitty-cat-sandwich.gif' style='width:250px;'>");
+        }
+        else {
+            randomImage = ("Invalid index: "+cat);
+        }
+
+        var html = `
+            <h1>Hello, ${username}</h1>
+            <div>${randomImage}</div>
+            <div><a href="/signout">Sign out</a></div>
+        `
+        res.send(html);
+        
+    } else {
+        res.redirect("/");
+    }
+
+    
+})
 
 app.get('/nosql-injection', async (req,res) => {
 	var username = req.query.user;
@@ -202,7 +243,7 @@ app.post('/loggingin', async (req,res) => {
 		req.session.username = username;
 		req.session.cookie.maxAge = expireTime;
 
-		res.redirect('/loggedIn');
+		res.redirect('/members');
 		return;
 	}
 	else {
@@ -212,15 +253,15 @@ app.post('/loggingin', async (req,res) => {
 	}
 });
 
-app.get('/loggedin', (req,res) => {
-    if (!req.session.authenticated) {
-        res.redirect('/login');
-    }
-    var html = `
-    You are logged in!
-    `;
-    res.send(html);
-});
+// app.get('/loggedin', (req,res) => {
+//     if (!req.session.authenticated) {
+//         res.redirect('/login');
+//     }
+//     var html = `
+//     You are logged in!
+//     `;
+//     res.send(html);
+// });
 
 app.get('/signout', (req,res) => {
 	req.session.destroy();
@@ -231,20 +272,20 @@ app.get('/signout', (req,res) => {
 });
 
 
-app.get('/cat/:id', (req,res) => {
+// app.get('/cat/:id', (req,res) => {
 
-    var cat = req.params.id;
+//     var cat = req.params.id;
 
-    if (cat == 1) {
-        res.send("Fluffy: <img src='/fluffy.gif' style='width:250px;'>");
-    }
-    else if (cat == 2) {
-        res.send("Socks: <img src='/socks.gif' style='width:250px;'>");
-    }
-    else {
-        res.send("Invalid cat id: "+cat);
-    }
-});
+//     if (cat == 1) {
+//         res.send("Fluffy: <img src='/fluffy.gif' style='width:250px;'>");
+//     }
+//     else if (cat == 2) {
+//         res.send("Socks: <img src='/socks.gif' style='width:250px;'>");
+//     }
+//     else {
+//         res.send("Invalid cat id: "+cat);
+//     }
+// });
 
 
 app.use(express.static(__dirname + "/public"));
