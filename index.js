@@ -78,7 +78,7 @@ app.get("/members", (req,res) => {
 
 
         if (randomIndex == 0) {
-            randomImage = ("<img src='/socks.gif' style='width:250px;'>");
+            randomImage = ("<h1>hello world</h1>");
         }
         else if (randomIndex == 1) {
             randomImage = ("<img src='/socks.gif' style='width:250px;'>");
