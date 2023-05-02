@@ -223,8 +223,8 @@ app.post('/submitUser', async (req,res) => {
 	await userCollection.insertOne({username: username, email: email, password: hashedPassword});
 	console.log("Inserted user");
 
-    var html = "successfully created user";
-    res.send(html);
+    // var html = "successfully created user";
+    res.redirect("/members");
 });
 
 app.post('/loggingin', async (req,res) => {
