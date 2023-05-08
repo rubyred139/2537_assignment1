@@ -2,6 +2,9 @@
 require("./utils.js");
 
 require('dotenv').config();
+
+const url = require("url");
+
 const express = require('express');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
@@ -31,6 +34,8 @@ var {database} = include('databaseConnection');
 
 const userCollection = database.db(mongodb_database).collection('users');
 
+app.set('view engine', 'ejs');
+
 app.use(express.urlencoded({extended: false}));
 
 var mongoStore = MongoStore.create({
@@ -48,64 +53,60 @@ app.use(session({
 }
 ));
 
+function isValidSession(req) {
+	return (req.session.authenticated);
+}
+
+function sessionValidation(req, res, next) {
+	if (isValidSession(req)) {
+		next();
+	} else {
+		res.redirect('/login');
+	}
+}
+
+function isAdmin(req) {
+	return (req.session.user_type == "admin");
+
+}
+
+function adminAuthorization(req, res, next) {
+	if (!isAdmin(req)) {
+		res.status(403);
+		res.render("errorMessage", {error:"Not Authorized!", navLinks: navLinks, currentURL: url.parse(req.url).pathname})
+	} else {
+		next;
+	}
+}
+
+const navLinks = [
+	{name: "Home", link: "/"},
+	{name: "Admin", link:"/admin"},
+	{name: "Login", link:"/login"},
+	{name: "Signup", link:"/signup"},
+	{name: "Members Area", link: "/members"},
+	{name: "Sign Out", link:"/signout"}
+]
+
 app.get('/', (req,res) => {
-    if (req.session.authenticated) {
-        var html = `
-            <h1>Welcom to Ruby's 2537 Assignment 1!</h1>
-            <div><a href="/members">Members Area</a></div>
-            <div><a href="/signout">Sign out</a></div>
-        `;
-        res.send(html);
-        return;
-    } else {
-        var html = `
-            <h1>Welcome to Ruby's 2537 Assignment 1!</h1>
-            <div><a href="/createUser">Sign up</a></div>
-            <div><a href="/login">Log in</a></div>
-        `;
-        res.send(html)
-        return;
-    }
-    // res.send(`<h1>Welcome to Ruby's 2537 Assignment 1!</h1>`)
+	console.log(req.url);
+	console.log(url.parse(req.url).pathname);
+	const authenticated = req.session.authenticated;
+	res.render('index', {authenticated: authenticated, navLinks: navLinks, currentURL: url.parse(req.url).pathname});
 
 });
 
+app.use("/members", sessionValidation);
 app.get("/members", (req,res) => {
-    var username = req.session.email;
+	var username = req.session.username;
+	var email = req.session.email
+	console.log(req.session);
+    res.render('members', {user: username, navLinks: navLinks, currentURL: url.parse(req.url).pathname});    
 
-    if (req.session.authenticated) {
-        const randomIndex = Math.floor(Math.random() * 3);
-
-
-        if (randomIndex == 0) {
-            randomImage = ("<img src='/socks.gif' style='width:250px;'>");
-        }
-        else if (randomIndex == 1) {
-            randomImage = ("<img src='/fluffy.jpg' style='width:250px;'>");
-        } 
-        else if (randomIndex == 2) {
-            randomImage = ("<img src='/kitty-cat-sandwich.gif' style='width:250px;'>");
-        }
-        else {
-            randomImage = ("Invalid index: "+cat);
-        }
-
-        var html = `
-            <h1>Hello, ${username}</h1>
-            <div>${randomImage}</div>
-            <div><a href="/signout">Sign out</a></div>
-        `
-        res.send(html);
-        
-    } else {
-        res.redirect("/");
-    }
-
-    
 })
 
 app.get('/nosql-injection', async (req,res) => {
-	var username = req.query.user;
+	var username = req.session.email;
 
 	if (!username) {
 		res.send(`<h3>no user provided - try /nosql-injection?user=name</h3> <h3>or /nosql-injection?user[$ne]=name</h3>`);
@@ -155,47 +156,28 @@ app.get('/nosql-injection', async (req,res) => {
 //     res.send(html);
 // });
 
-app.post('/submitEmail', (req,res) => {
-    var email = req.body.email;
-    if (!email) {
-        res.redirect('/contact?missing=1');
-    }
-    else {
-        res.send("Thanks for subscribing with your email: "+email);
-    }
-});
+// app.post('/submitEmail', (req,res) => {
+//     var email = req.body.email;
+//     if (!email) {
+//         res.redirect('/contact?missing=1');
+//     }
+//     else {
+//         res.send("Thanks for subscribing with your email: "+email);
+//     }
+// });
 
 
-app.get('/createUser', (req,res) => {
-    var html = `
-    create user
-    <form action='/submitUser' method='post'>
-    <input name='username' type='text' placeholder='username'>
-    <input name='email' type='text' placeholder='email'>
-    <input name='password' type='password' placeholder='password'>
-    <button>Submit</button>
-    </form>
-    `;
-    res.send(html);
+app.get('/signup', (req,res) => {
+    res.render('createUser', {navLinks: navLinks, currentURL: url.parse(req.url).pathname});
 });
 
 
 app.get('/login', (req,res) => {
-    var invalidPassword = req.query.msg;
-
-    var html = `
-    log in
-    <form action='/loggingin' method='post'>
-    <input name='email' type='text' placeholder='email'>
-    <input name='password' type='password' placeholder='password'>
-    <button>Submit</button>
-    </form>
-    `;
-
-    if (invalidPassword) {
-        html += "<br> Invalid email/password combination" ;
-    }
-    res.send(html);
+	// var invalidPassword = req.query.msg;
+    // if (invalidPassword) {
+    //     html += "<br> Invalid email/password combination" ;
+    // }
+    res.render('login', {navLinks: navLinks, currentURL: url.parse(req.url).pathname});
 
 });
 
@@ -203,6 +185,35 @@ app.post('/submitUser', async (req,res) => {
     var username = req.body.username;
     var email = req.body.email;
     var password = req.body.password;
+
+	if (!username || !email || !password) {
+		// Create an object to hold the missing fields
+		const missingFields = {};
+	
+		// Add missing fields to the object
+		if (!username) {
+		  missingFields.username = 'Username';
+		}
+		if (!email) {
+		  missingFields.email = 'Email';
+		}
+		if (!password) {
+		  missingFields.password = 'Password';
+		}
+	
+		// Generate the error message
+		const errorMessage = Object.entries(missingFields)
+		  .map(([field, label]) => `${label} is required`)
+		  .join('. ');
+	
+		const html = `
+		<p>${errorMessage}</p>
+		<a href="/signup">Try again</a>
+		`; 
+		// Render the error message with a link back to the login page
+		res.send(html);
+		return;
+	  }
 
 	const schema = Joi.object(
 		{
@@ -212,9 +223,11 @@ app.post('/submitUser', async (req,res) => {
 		});
 	
 	const validationResult = schema.validate({username, email, password});
+
+
 	if (validationResult.error != null) {
 	   console.log(validationResult.error);
-	   res.redirect("/createUser");
+	   res.send("<h1 style='color:darkred;'>A NoSQL injection attack was detected!!</h1>");
 	   return;
    }
 
@@ -226,6 +239,7 @@ app.post('/submitUser', async (req,res) => {
     // Log the user in by setting the session variables
     req.session.authenticated = true;
     req.session.email = email;
+	req.session.username = username;
     // var html = "successfully created user";
     res.redirect("/members");
 });
@@ -242,13 +256,13 @@ app.post('/loggingin', async (req,res) => {
 	   return;
 	}
 
-	const result = await userCollection.find({email: email}).project({email: 1, password: 1, _id: 1}).toArray();
+	const result = await userCollection.find({email: email}).project({email: 1, password: 1, _id: 1, username: 1}).toArray();
 
 	console.log(result);
 	if (result.length != 1) {
         res.send("Invalid email/password combination");
 		console.log("user not found");
-		res.redirect("/login");
+		res.render('login');
 		return;
 	}
 	if (await bcrypt.compare(password, result[0].password)) {
@@ -256,14 +270,15 @@ app.post('/loggingin', async (req,res) => {
 		req.session.authenticated = true;
 		req.session.email = email;
 		req.session.cookie.maxAge = expireTime;
+		req.session.username = result[0].username;
 
 		res.redirect('/members');
 		return;
 	}
 	else {
-        const errorMessage = "Invalid email/password combination";
+		res.send("Invalid email/password combination")
 		console.log("incorrect password");
-		res.redirect("/login?msg=" + errorMessage);
+		res.redirect("/login");
         
 		return;
 	}
@@ -282,10 +297,7 @@ app.post('/loggingin', async (req,res) => {
 
 app.get('/signout', (req,res) => {
 	req.session.destroy();
-    var html = `
-    You are logged out.
-    `;
-    res.send(html);
+    res.render('index', {authenticated: false, navLinks:navLinks ,currentURL: url.parse(req.url).pathname});
 });
 
 
@@ -304,12 +316,17 @@ app.get('/signout', (req,res) => {
 //     }
 // });
 
+app.get('/admin', sessionValidation, adminAuthorization, async(req,res) => {
+
+	const result = await userCollection.find().project({username: 1, _id: 1}).toArray();
+	res.render('admin', {users: result, navLinks:navLinks, currentURL: url.parse(req.url).pathname});
+})
 
 app.use(express.static(__dirname + "/public"));
 
 app.get("*", (req,res) => {
-	res.status(404);
-	res.send("Page not found - 404");
+    res.status(404);
+    res.render('404', {navLinks: navLinks, currentURL: url.parse(req.url).pathname});
 })
 
 app.listen(port, () => {
