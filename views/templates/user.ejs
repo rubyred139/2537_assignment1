@@ -1,1 +1,5 @@
-<li><%= user.username %> </li>
+<li>
+    <%= user.username %> (<%= user.user_type %>) 
+    <a class="btn btn-danger rounded-pill px-3" href="/admin/promote">Promote to Admin</a>
+    <a class="btn btn-success rounded-pill px-3" href="/admin/demote">Demote to user</a>
+</li>

@@ -75,7 +75,7 @@ function adminAuthorization(req, res, next) {
 		res.status(403);
 		res.render("errorMessage", {error:"Not Authorized!", navLinks: navLinks, currentURL: url.parse(req.url).pathname})
 	} else {
-		next;
+		next();
 	}
 }
 
@@ -89,8 +89,6 @@ const navLinks = [
 ]
 
 app.get('/', (req,res) => {
-	console.log(req.url);
-	console.log(url.parse(req.url).pathname);
 	const authenticated = req.session.authenticated;
 	res.render('index', {authenticated: authenticated, navLinks: navLinks, currentURL: url.parse(req.url).pathname});
 
@@ -256,7 +254,7 @@ app.post('/loggingin', async (req,res) => {
 	   return;
 	}
 
-	const result = await userCollection.find({email: email}).project({email: 1, password: 1, _id: 1, username: 1}).toArray();
+	const result = await userCollection.find({email: email}).project({email: 1, password: 1, _id: 1, username: 1, user_type: 1}).toArray();
 
 	console.log(result);
 	if (result.length != 1) {
@@ -271,6 +269,7 @@ app.post('/loggingin', async (req,res) => {
 		req.session.email = email;
 		req.session.cookie.maxAge = expireTime;
 		req.session.username = result[0].username;
+		req.session.user_type =result[0].user_type;
 
 		res.redirect('/members');
 		return;
@@ -315,11 +314,30 @@ app.get('/signout', (req,res) => {
 //         res.send("Invalid cat id: "+cat);
 //     }
 // });
-
-app.get('/admin', sessionValidation, adminAuthorization, async(req,res) => {
-
-	const result = await userCollection.find().project({username: 1, _id: 1}).toArray();
+app.use("/admin", sessionValidation, adminAuthorization);
+app.get('/admin', async(req,res) => {
+	const result = await userCollection.find().project({username: 1, _id: 1, user_type: 1}).toArray();
 	res.render('admin', {users: result, navLinks:navLinks, currentURL: url.parse(req.url).pathname});
+})
+
+app.get('/admin/promote', async(req, res) => {
+	const result = await userCollection.find().project({username: 1, _id: 1, user_type: 1}).toArray();
+	const username = result[0].username;
+	await userCollection.updateOne({ username: username }, { $set: { user_type: 'admin' }
+	
+ });
+ 	console.log(`${username} promoted to admin.`)
+ 	res.redirect('/admin');
+})
+
+app.get('/admin/demote', async(req, res) => {
+	const result = await userCollection.find().project({username: 1, _id: 1, user_type: 1}).toArray();
+	const username = result[0].username;
+	await userCollection.updateOne({ username: username }, { $set: { user_type: 'user' }
+	
+ });
+ 	console.log(`${username} demoted to user.`)
+ 	res.redirect('/admin');
 })
 
 app.use(express.static(__dirname + "/public"));
